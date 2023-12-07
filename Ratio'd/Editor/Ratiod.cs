@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEditor;
-using DogeHelper;
+using ShibaHelper;
 using System.Reflection;
 using System;
 using System.IO;
@@ -37,7 +37,7 @@ public class Ratiod : EditorWindow
     {
 
         GUILayout.Label("Ratio'd Texture Viewer", EditorStyles.boldLabel);
-        GUILayout.Label("Version 1.0 \n", EditorStyles.miniLabel);
+        GUILayout.Label("Version 1.01 \n", EditorStyles.miniLabel);
         EditorGUI.BeginChangeCheck();
         shaderMaterial = EditorGUILayout.ObjectField("Avatar Shader", shaderMaterial, typeof(Material), true) as Material;
         if (EditorGUI.EndChangeCheck() && shaderMaterial != null)
@@ -245,7 +245,7 @@ public class Ratiod : EditorWindow
     }
     private void CreateTextures()
     {
-        string currentFolder = DogeHelpers.GetCurrentFolder();
+        string currentFolder = ShibaHelpers.GetCurrentFolder();
         
         if (!AssetDatabase.IsValidFolder(currentFolder + "/Test Textures") && Path.GetFileNameWithoutExtension(currentFolder) != "Test Textures")
         {
