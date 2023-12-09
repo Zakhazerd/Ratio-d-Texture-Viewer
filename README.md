@@ -3,8 +3,7 @@ A Unity tool that will to help you pick your quality to compression ratio
 
 Can be found under Tools/Ratio'd
 
-Insert your shader into the field and it will try to grab your _MainTex and _BumpMap textures
-If your shader does not use these keywords for main texture and normal map pls message me so I can change it @zakhazard
+Insert your shader into the field and it will grab any valid textures that it can find on your shader
 
 When you click to create your textures it will make 12 variations using various compression formats 2 sizes smaller and bilinear and mitchell resizing
 
