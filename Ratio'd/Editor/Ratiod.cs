@@ -10,11 +10,10 @@ using System.IO;
 public class Ratiod : EditorWindow
 {
     Material shaderMaterial;
-    Texture2D shaderTexture;
-    Texture2D shaderNormalMap;
     Texture2D currentTexture;
     Texture2D[] textureArray = new Texture2D[12];
     Vector2 scrollPos;
+    Vector2 scrollPos2;
     public static bool alphaUsed;
     public static int currentProccessedTexture = 0;
     public static bool processingTexture = false;
@@ -23,6 +22,9 @@ public class Ratiod : EditorWindow
     public static string textureName;
     public static bool isNormalMap = false;
     public static float[] vramSize = new float[12];
+    List<string> textureNameList = new List<string>(); //now this would be a good idea to make into its own class but im not going to :)
+    List<Texture2D> textureList = new List<Texture2D>();
+    int listIndex = 0;
     int whichSize =0;
     string whichResize = "Bilinear";
     string whichCompresssion = "DXT";
@@ -35,49 +37,69 @@ public class Ratiod : EditorWindow
     }
     private void OnGUI()
     {
-
+        //Intial labeling
         GUILayout.Label("Ratio'd Texture Viewer", EditorStyles.boldLabel);
-        GUILayout.Label("Version 1.01 \n", EditorStyles.miniLabel);
+        GUILayout.Label("Version 1.1 \n", EditorStyles.miniLabel);
+        ShibaHelpers.DrawLine();
+
+        //The avatar shader and getting of the texture list
         EditorGUI.BeginChangeCheck();
         shaderMaterial = EditorGUILayout.ObjectField("Avatar Shader", shaderMaterial, typeof(Material), true) as Material;
-        if (EditorGUI.EndChangeCheck() && shaderMaterial != null)
+        if (EditorGUI.EndChangeCheck())
         {
-            shaderTexture = shaderMaterial.mainTexture as Texture2D;
-            shaderNormalMap = shaderMaterial.GetTexture("_BumpMap") as Texture2D;
+            if (shaderMaterial != null)
+            {
+                textureNameList.Clear();
+                textureList.Clear(); 
+                string[] myProperties = shaderMaterial.GetTexturePropertyNames();
+                for (int i = 0; i < myProperties.Length; i++)
+                {
+                    if (shaderMaterial.GetTexture(myProperties[i]) != null)
+                    {
+                        textureNameList.Add(myProperties[i]);
+                        textureList.Add(shaderMaterial.GetTexture(myProperties[i]) as Texture2D);
+                    }
+                }
+            }
+            else
+            {
+                textureNameList.Clear();
+                textureList.Clear();
+            }
         }
+        
+       //If we are not processing a texture draw all of them
         if (textureArray[0] == null)
         {
-            shaderTexture = EditorGUILayout.ObjectField("Shader Texture", shaderTexture, typeof(Texture2D), true) as Texture2D;
-            shaderNormalMap = EditorGUILayout.ObjectField("Shader Normal Map", shaderNormalMap, typeof(Texture2D), true) as Texture2D;
-            alphaUsed = EditorGUILayout.Toggle("Alpha Channel Used", alphaUsed);
+            scrollPos2 = EditorGUILayout.BeginScrollView(scrollPos2, GUILayout.Height(Math.Min(215,textureList.Count * 21.5f)));
+            for (int i = 0; i < textureNameList.Count; i++)
+            {
+                EditorGUILayout.BeginHorizontal();
+                GUILayout.Label(textureNameList[i], GUILayout.Width(100));
+                textureList[i] = EditorGUILayout.ObjectField(textureList[i], typeof(Texture2D), true) as Texture2D;
+                if (GUILayout.Button("Select", GUILayout.Width(60)))
+                {
+                    currentTexture = textureList[i];
+                    processingTexture = true;
+                    CreateTextures();
+                    processingTexture = false;
 
-            EditorGUI.BeginDisabledGroup(shaderTexture == null);
-            if (GUILayout.Button("Create Textures"))
-            {
-                isNormalMap = false;
-                currentTexture = shaderTexture;
-                processingTexture = true;
-                CreateTextures();
-                processingTexture = false;
-                
+                }
+                EditorGUILayout.EndHorizontal();
             }
-            EditorGUI.EndDisabledGroup();
-            EditorGUI.BeginDisabledGroup(shaderNormalMap == null);
-            if (GUILayout.Button("Create Normal Maps"))
-            {
-                isNormalMap = true;
-                currentTexture = shaderNormalMap;
-                processingTexture = true;
-                CreateTextures();
-                processingTexture = false;
-            }
-            EditorGUI.EndDisabledGroup();
+             EditorGUILayout.EndScrollView();
+            alphaUsed = EditorGUILayout.Toggle("Alpha Channel Used", alphaUsed);
         }
+       
         else
-            currentTexture = EditorGUILayout.ObjectField("Current Texture", currentTexture, typeof(Texture2D), true) as Texture2D;
+            currentTexture = EditorGUILayout.ObjectField("Current Texture", currentTexture, typeof(Texture2D), true) as Texture2D; //else show current one select kind of no longer needed
+
+
+       
         scrollPos = EditorGUILayout.BeginScrollView(scrollPos);
         if (textureArray[0] != null)
         {
+            //Buttons to change texture size
             if (whichSize != 0)
                 if (GUILayout.Button("Size: " + textureSize))
                 {
@@ -137,6 +159,8 @@ public class Ratiod : EditorWindow
                     
 
                 }
+
+            //Button to change compression
             if (GUILayout.Button(whichCompresssion))
             {
                 if (whichCompresssion == "DXT")
@@ -155,6 +179,8 @@ public class Ratiod : EditorWindow
                 
 
             }
+
+            //Button to change resizing
             if (GUILayout.Button(whichResize))
             {
                 if (whichResize == "Bilinear")
@@ -174,6 +200,7 @@ public class Ratiod : EditorWindow
 
             }
            
+            //Finish texture testing
             if (GUILayout.Button("Select and Delete Duplicates"))
             {
                 for (int i = 0; i < textureArray.Length; i++)
@@ -182,15 +209,15 @@ public class Ratiod : EditorWindow
                     {
                         AssetDatabase.DeleteAsset(AssetDatabase.GetAssetPath(textureArray[i]));
                     }
-                    textureArray[i] = null;
-                    if (isNormalMap)
-                    {
-                        shaderNormalMap = currentTexture;
-                    }
                     else
-                        shaderTexture = currentTexture;
+                    {
+                        textureList[listIndex] = currentTexture;
+                    }
+                    textureArray[i] = null;
                 }
             }
+
+            //Draw texture varitions
             for (int i = 0; i < textureArray.Length; i++)
             {
                 EditorGUILayout.BeginHorizontal();
@@ -207,6 +234,8 @@ public class Ratiod : EditorWindow
         EditorGUILayout.EndScrollView();
 
     }
+
+    //For making on scene and drawing extra view
     private void OnFocus()
     {
         SceneView.duringSceneGui -= this.OnSceneGUI;
@@ -214,8 +243,7 @@ public class Ratiod : EditorWindow
     }
     void OnDestroy()
     {
-        // When the window is destroyed, remove the delegate
-        // so that it will no longer do any drawing.
+     
         SceneView.duringSceneGui -= this.OnSceneGUI;
     }
     void OnSceneGUI(SceneView sceneView)
@@ -283,10 +311,7 @@ public class Ratiod : EditorWindow
     private void SetTexture()
     {
         currentTexture = textureArray[textureArrayLocation];
-        if (isNormalMap)
-            shaderMaterial.SetTexture("_BumpMap", currentTexture);
-        else
-            shaderMaterial.mainTexture = currentTexture;
+        shaderMaterial.SetTexture(textureNameList[listIndex], currentTexture);
     }
     class MyTexturePostprocessor : AssetPostprocessor
     {
